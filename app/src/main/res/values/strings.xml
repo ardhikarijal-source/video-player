@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pemutar Video</string>
+
+    <string name="tab_video">Video</string>
+    <string name="tab_folder">Folder</string>
+
+    <string name="menu_search">Cari video</string>
+    <string name="menu_sort">Urutkan</string>
+    <string name="menu_open_file">Buka file…</string>
+    <string name="menu_open_url">Buka URL jaringan…</string>
+    <string name="menu_default">Jadikan pemutar default</string>
+    <string name="menu_refresh">Muat ulang</string>
+
+    <string name="sort_newest">Terbaru</string>
+    <string name="sort_name">Nama (A–Z)</string>
+    <string name="sort_duration">Durasi</string>
+    <string name="sort_size">Ukuran</string>
+
+    <string name="empty_no_video">Tidak ada video ditemukan</string>
+    <string name="empty_need_permission">Izinkan akses ke video agar aplikasi bisa menampilkan daftar video di HP kamu.</string>
+    <string name="btn_grant">Beri izin</string>
+    <string name="folder_info">%1$d video • %2$s</string>
+
+    <string name="dialog_url_title">Buka URL jaringan</string>
+    <string name="dialog_url_hint">https://contoh.com/video.mp4</string>
+    <string name="dialog_open">Buka</string>
+    <string name="dialog_cancel">Batal</string>
+    <string name="dialog_close">Tutup</string>
+
+    <string name="default_title">Jadikan pemutar default</string>
+    <string name="default_message">Cara menjadikan aplikasi ini pemutar video default:\n\n1. Buka sebuah video dari File Manager atau Galeri.\n2. Saat muncul pilihan \"Buka dengan\", pilih Pemutar Video lalu ketuk \"Selalu\".\n\nJika HP langsung membuka MiVideo tanpa bertanya, buka Pengaturan > Aplikasi > Kelola aplikasi > MiVideo, lalu hapus pengaturan default-nya (Atur sebagai default > Hapus default).</string>
+    <string name="default_open_settings">Buka pengaturan</string>
+
+    <string name="err_play">Gagal memutar video (%1$s). Format atau codec mungkin tidak didukung HP ini.</string>
+    <string name="subtitle_loaded">Subtitle dimuat</string>
+    <string name="pip_unavailable">Mode jendela mengambang (PiP) tidak tersedia. Cek izin PiP untuk aplikasi ini di pengaturan HP.</string>
+    <string name="no_video_data">Tidak ada video untuk diputar</string>
+
+    <string name="cd_back">Kembali</string>
+    <string name="cd_subtitle">Muat subtitle</string>
+    <string name="cd_aspect">Rasio layar</string>
+    <string name="cd_rotate">Rotasi layar</string>
+    <string name="cd_pip">Jendela mengambang</string>
+    <string name="cd_lock">Kunci layar</string>
+    <string name="cd_unlock">Buka kunci</string>
+</resources>
