@@ -42,17 +42,6 @@
                 android:src="@drawable/ic_close"
                 android:tint="@color/white" />
 
-            <ImageButton
-                android:id="@+id/btnPip"
-                android:layout_width="40dp"
-                android:layout_height="42dp"
-                android:layout_marginStart="4dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/cd_pip"
-                android:padding="10dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_pip"
-                android:tint="@color/white" />
 
             <ImageButton
                 android:id="@+id/btnAspect"
@@ -95,6 +84,17 @@
                 android:progressTint="@color/white"
                 android:thumbTint="@color/white" />
 
+            <ImageButton
+                android:id="@+id/btnPip"
+                android:layout_width="40dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_pip"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_pip"
+                android:tint="@color/white" />
             <ImageButton
                 android:id="@+id/btnShareTop"
                 android:layout_width="42dp"
