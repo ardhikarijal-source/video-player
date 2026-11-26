@@ -405,10 +405,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startDownload(release: Updater.Release) {
-        lastRelease = release
+        // Jangan memasang APK secara langsung dari aplikasi. Buka halaman rilis resmi
+        // agar Android/Play Protect dapat memeriksa paket sebelum pengguna memasangnya.
         try {
-            downloadId = Updater.enqueueDownload(this, release)
-            Toast.makeText(this, R.string.update_downloading, Toast.LENGTH_SHORT).show()
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ardhikarijal-source/video-player/releases/latest"))
+            startActivity(intent)
         } catch (e: Exception) {
             Toast.makeText(this, R.string.update_download_failed, Toast.LENGTH_LONG).show()
         }
