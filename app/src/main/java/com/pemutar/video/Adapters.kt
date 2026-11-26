@@ -16,6 +16,13 @@ class VideoAdapter(
 ) : RecyclerView.Adapter<VideoAdapter.VH>() {
 
     private var items: List<VideoItem> = emptyList()
+    private var selectedIds: Set<String> = emptySet()
+
+    @SuppressLint("NotifyDataSetChanged")
+    fun setSelectedIds(ids: Set<String>) {
+        selectedIds = ids
+        notifyDataSetChanged()
+    }
 
     @SuppressLint("NotifyDataSetChanged")
     fun submit(list: List<VideoItem>) {
@@ -34,7 +41,7 @@ class VideoAdapter(
         val v = items[position]
         val ctx = holder.itemView.context
 
-        holder.b.tvName.text = v.name
+        holder.b.tvName.text = if (selectedIds.contains(v.uri.toString())) "✓  ${v.name}" else v.name
         holder.b.tvDuration.text = Fmt.duration(v.durationMs)
 
         val sizeText = Formatter.formatShortFileSize(ctx, v.size)
@@ -62,10 +69,18 @@ class VideoAdapter(
 }
 
 class FolderAdapter(
-    private val onClick: (FolderItem) -> Unit
+    private val onClick: (FolderItem) -> Unit,
+    private val onLongClick: (FolderItem) -> Unit
 ) : RecyclerView.Adapter<FolderAdapter.VH>() {
 
     private var items: List<FolderItem> = emptyList()
+    private var selectedIds: Set<String> = emptySet()
+
+    @SuppressLint("NotifyDataSetChanged")
+    fun setSelectedIds(ids: Set<String>) {
+        selectedIds = ids
+        notifyDataSetChanged()
+    }
 
     @SuppressLint("NotifyDataSetChanged")
     fun submit(list: List<FolderItem>) {
@@ -83,12 +98,16 @@ class FolderAdapter(
     override fun onBindViewHolder(holder: VH, position: Int) {
         val f = items[position]
         val ctx = holder.itemView.context
-        holder.b.tvFolderName.text = f.name
+        holder.b.tvFolderName.text = if (selectedIds.contains(f.bucketId)) "✓  ${f.name}" else f.name
         holder.b.tvFolderInfo.text = ctx.getString(
             R.string.folder_info,
             f.count,
             Formatter.formatShortFileSize(ctx, f.totalSize)
         )
         holder.itemView.setOnClickListener { onClick(f) }
+        holder.itemView.setOnLongClickListener {
+            onLongClick(f)
+            true
+        }
     }
 }
