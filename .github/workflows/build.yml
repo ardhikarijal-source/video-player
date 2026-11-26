@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Tag yang akan dibuatkan GitHub Release (contoh: v1.2). Kosongkan jika hanya ingin build."
+        description: "Nama GitHub Release yang akan dibuat (contoh: v1.2). Kosongkan jika hanya ingin build."
         required: false
         type: string
   push:
@@ -19,9 +19,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # Gunakan commit pemicu workflow. Untuk manual run, build dari commit main
+      # yang dipilih; tag release boleh dibuat pada tahap publikasi di bawah.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_tag != '' && inputs.release_tag || github.ref }}
+          ref: ${{ github.sha }}
 
       - uses: actions/setup-java@v4
         with:
@@ -53,6 +55,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.release_tag != '' && inputs.release_tag || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           name: Pemutar Video ${{ inputs.release_tag != '' && inputs.release_tag || github.ref_name }}
           generate_release_notes: true
           files: app/build/outputs/apk/debug/*.apk
