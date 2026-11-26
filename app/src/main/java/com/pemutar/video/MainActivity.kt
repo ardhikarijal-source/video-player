@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
@@ -52,7 +54,7 @@ class MainActivity : AppCompatActivity() {
     private var downloadId = -1L
     private var pendingApk: File? = null
 
-    private val videoAdapter = VideoAdapter { video -> playVideo(video) }
+    private val videoAdapter = VideoAdapter({ video -> playVideo(video) }, { video -> showVideoActions(video) })
     private val folderAdapter = FolderAdapter { folder -> openFolder(folder) }
 
     private val gridManager by lazy { GridLayoutManager(this, 2) }
@@ -438,6 +440,50 @@ class MainActivity : AppCompatActivity() {
         intent.data = uri
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         startActivity(intent)
+    }
+
+    private fun showVideoActions(video: VideoItem) {
+        val actions = arrayOf("Bagikan", "Salin tautan file", "Hapus")
+        AlertDialog.Builder(this)
+            .setTitle(video.name)
+            .setItems(actions) { _, which ->
+                when (which) {
+                    0 -> {
+                        val send = Intent(Intent.ACTION_SEND).apply {
+                            type = "video/*"
+                            putExtra(Intent.EXTRA_STREAM, video.uri)
+                            clipData = ClipData.newRawUri(video.name, video.uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        startActivity(Intent.createChooser(send, "Bagikan video"))
+                    }
+                    1 -> {
+                        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newUri(contentResolver, video.name, video.uri))
+                        Toast.makeText(this, "Tautan video disalin", Toast.LENGTH_SHORT).show()
+                    }
+                    2 -> AlertDialog.Builder(this)
+                        .setMessage("Apakah Anda yakin ingin menghapus video ini?")
+                        .setPositiveButton("Hapus") { _, _ ->
+                            try {
+                                val deleted = contentResolver.delete(video.uri, null, null)
+                                if (deleted > 0) {
+                                    Toast.makeText(this, "Video dihapus", Toast.LENGTH_SHORT).show()
+                                    loadVideos()
+                                } else {
+                                    Toast.makeText(this, "Video tidak dapat dihapus", Toast.LENGTH_LONG).show()
+                                }
+                            } catch (e: SecurityException) {
+                                Toast.makeText(this, "Izin penghapusan ditolak. Hapus melalui File Manager.", Toast.LENGTH_LONG).show()
+                            } catch (e: Exception) {
+                                Toast.makeText(this, "Gagal menghapus video", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                        .setNegativeButton("Batal", null)
+                        .show()
+                }
+            }
+            .show()
     }
 
     private fun playVideo(video: VideoItem) {
