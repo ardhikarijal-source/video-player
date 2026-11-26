@@ -103,7 +103,11 @@ class PlayerActivity : AppCompatActivity() {
     private val resizeNames = arrayOf("Pas layar", "Regangkan", "Zoom (potong tepi)")
     private val speeds = floatArrayOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
 
-    private val hideHudRunnable = Runnable { binding.tvHud.visibility = View.GONE }
+    private val hideHudRunnable = Runnable {
+        binding.tvHud.visibility = View.GONE
+        binding.volumeHud.visibility = View.GONE
+        binding.brightnessHud.visibility = View.GONE
+    }
     private val hideUnlockRunnable = Runnable { binding.btnUnlock.visibility = View.GONE }
     private val autoHideRunnable = Runnable {
         if (player?.isPlaying == true && !userSeeking) hideControls()
@@ -306,6 +310,7 @@ class PlayerActivity : AppCompatActivity() {
         binding.btnPip.setOnClickListener { tryEnterPip(true) }
         binding.btnAspect.setOnClickListener { cycleResize(); scheduleAutoHide() }
         binding.btnShare.setOnClickListener { shareCurrent() }
+        binding.btnShareTop.setOnClickListener { shareCurrent() }
 
         binding.btnReplay.setOnClickListener { seekRelative(-10_000L); scheduleAutoHide() }
         binding.btnForward.setOnClickListener { seekRelative(10_000L); scheduleAutoHide() }
@@ -837,7 +842,14 @@ class PlayerActivity : AppCompatActivity() {
         val lp = window.attributes
         lp.screenBrightness = value
         window.attributes = lp
-        showHud("Kecerahan ${(value * 100).roundToInt()}%")
+        val percent = (value * 100).roundToInt()
+        binding.tvBrightnessPercent.text = "Kecerahan $percent%"
+        binding.barBrightness.progress = percent
+        binding.brightnessHud.visibility = View.VISIBLE
+        binding.volumeHud.visibility = View.GONE
+        binding.tvHud.visibility = View.GONE
+        handler.removeCallbacks(hideHudRunnable)
+        handler.postDelayed(hideHudRunnable, 1100)
     }
 
     private fun updateVolume(dy: Float, height: Int) {
@@ -847,7 +859,14 @@ class PlayerActivity : AppCompatActivity() {
         val value = (startVolume - dy / height * max * 1.3f).coerceIn(0f, max.toFloat())
         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, value.roundToInt(), 0)
         binding.seekVolume.progress = value.roundToInt()
-        showHud("Volume ${(value / max * 100).roundToInt()}%")
+        val percent = (value / max * 100).roundToInt()
+        binding.tvVolumePercent.text = "Volume $percent%"
+        binding.barVolume.progress = percent
+        binding.volumeHud.visibility = View.VISIBLE
+        binding.brightnessHud.visibility = View.GONE
+        binding.tvHud.visibility = View.GONE
+        handler.removeCallbacks(hideHudRunnable)
+        handler.postDelayed(hideHudRunnable, 1100)
     }
 
     private fun endGesture() {
