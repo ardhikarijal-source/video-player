@@ -76,11 +76,17 @@
                 android:src="@drawable/ic_share"
                 android:tint="@color/white" />
 
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
             <SeekBar
                 android:id="@+id/seekVolume"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:visibility="gone"
                 android:minWidth="42dp"
                 android:layout_marginStart="4dp"
                 android:contentDescription="@string/cd_volume"
@@ -88,12 +94,16 @@
                 android:progressTint="@color/white"
                 android:thumbTint="@color/white" />
 
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_marginStart="4dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_volume" />
+            <ImageButton
+                android:id="@+id/btnShareTop"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_glass_circle"
+                android:contentDescription="@string/cd_share"
+                android:padding="11dp"
+                android:src="@drawable/ic_share"
+                android:tint="@color/white" />
         </LinearLayout>
 
         <!-- Tengah: mundur 10, putar/jeda, maju 10 -->
