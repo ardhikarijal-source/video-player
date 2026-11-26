@@ -308,7 +308,6 @@ class PlayerActivity : AppCompatActivity() {
     private fun setupControls() {
         binding.btnClose.setOnClickListener { closePlayer() }
         binding.btnPip.setOnClickListener { tryEnterPip(true) }
-        binding.btnAspect.setOnClickListener { cycleResize(); scheduleAutoHide() }
         binding.btnShare.setOnClickListener { shareCurrent() }
         binding.btnShareTop.setOnClickListener { shareCurrent() }
 
