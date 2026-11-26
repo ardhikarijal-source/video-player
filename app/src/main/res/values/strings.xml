@@ -38,15 +38,11 @@
     <string name="update_message">Versi %1$s sudah tersedia. Kamu memakai versi %2$s.%3$s</string>
     <string name="update_now">Perbarui</string>
     <string name="update_later">Nanti</string>
-    <string name="update_downloading">Mengunduh pembaruan…</string>
     <string name="update_none">Kamu sudah memakai versi terbaru</string>
     <string name="update_failed">Tidak bisa memeriksa pembaruan. Cek koneksi internet.</string>
-    <string name="update_download_failed">Unduhan pembaruan gagal</string>
-    <string name="update_permission_title">Izin pemasangan</string>
-    <string name="update_permission_message">Agar bisa memasang pembaruan, izinkan aplikasi ini memasang aplikasi lain. Setelah mengizinkan, kembali ke sini dan pemasangan akan dilanjutkan.</string>
     <string name="update_channel">Pembaruan aplikasi</string>
     <string name="notif_update_title">Pembaruan Pemutar Video tersedia</string>
-    <string name="notif_update_text">Versi %1$s siap diunduh. Ketuk untuk memperbarui.</string>
+    <string name="notif_update_text">Versi %1$s tersedia. Ketuk untuk melihat halaman rilis.</string>
 
     <string name="err_play">Gagal memutar video (%1$s). Format atau codec mungkin tidak didukung HP ini.</string>
     <string name="subtitle_loaded">Subtitle dimuat</string>
