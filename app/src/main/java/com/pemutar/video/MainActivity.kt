@@ -50,9 +50,18 @@ class MainActivity : AppCompatActivity() {
     private var askedNotifPermission = false
     private var lastRelease: Updater.Release? = null
     private var pendingCopy: VideoItem? = null
+    private val selectedVideoIds = linkedSetOf<String>()
+    private val selectedFolderIds = linkedSetOf<String>()
+    private var selectionMode = false
 
-    private val videoAdapter = VideoAdapter({ video -> playVideo(video) }, { video -> showVideoActions(video) })
-    private val folderAdapter = FolderAdapter { folder -> openFolder(folder) }
+    private val videoAdapter = VideoAdapter(
+        { video -> if (selectionMode) toggleVideoSelection(video) else playVideo(video) },
+        { video -> toggleVideoSelection(video) }
+    )
+    private val folderAdapter = FolderAdapter(
+        { folder -> if (selectionMode) toggleFolderSelection(folder) else openFolder(folder) },
+        { folder -> toggleFolderSelection(folder) }
+    )
 
     private val gridManager by lazy { GridLayoutManager(this, 2) }
     private val listManager by lazy { LinearLayoutManager(this) }
@@ -81,7 +90,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.toolbar.inflateMenu(R.menu.main_menu)
         binding.toolbar.setOnMenuItemClickListener { item -> handleMenu(item.itemId) }
-        binding.toolbar.setNavigationOnClickListener { exitFolder() }
+        binding.toolbar.setNavigationOnClickListener { if (selectionMode) clearSelection() else exitFolder() }
         setupSearch()
 
         binding.tabs.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
@@ -99,7 +108,7 @@ class MainActivity : AppCompatActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (currentFolderId != null) exitFolder() else finish()
+                if (selectionMode) clearSelection() else if (currentFolderId != null) exitFolder() else finish()
             }
         })
 
@@ -179,6 +188,7 @@ class MainActivity : AppCompatActivity() {
             if (binding.list.layoutManager !== gridManager) binding.list.layoutManager = gridManager
             if (binding.list.adapter !== videoAdapter) binding.list.adapter = videoAdapter
             videoAdapter.submit(sorted)
+            videoAdapter.setSelectedIds(selectedVideoUris())
             updateEmpty(sorted.isEmpty())
         } else {
             // Folder: daftar 1 kolom
@@ -192,16 +202,111 @@ class MainActivity : AppCompatActivity() {
             if (binding.list.layoutManager !== listManager) binding.list.layoutManager = listManager
             if (binding.list.adapter !== folderAdapter) binding.list.adapter = folderAdapter
             folderAdapter.submit(folders)
+            folderAdapter.setSelectedIds(selectedFolderIds)
             updateEmpty(folders.isEmpty())
         }
 
-        if (folderId != null) {
+        if (selectionMode) {
+            binding.toolbar.title = "${selectedFolderIds.size + selectedVideoIds.size} dipilih"
+            binding.toolbar.setNavigationIcon(R.drawable.ic_close)
+        } else if (folderId != null) {
             binding.toolbar.title = currentFolderName
             binding.toolbar.setNavigationIcon(R.drawable.ic_back)
         } else {
             binding.toolbar.title = getString(R.string.app_name)
             binding.toolbar.navigationIcon = null
         }
+        updateSelectionMenu()
+    }
+
+    private fun selectedVideoUris(): Set<String> {
+        val ids = selectedVideoIds.toMutableSet()
+        ids.addAll(allVideos.filter { selectedFolderIds.contains(it.bucketId) }.map { it.uri.toString() })
+        return ids
+    }
+
+    private fun updateSelectionMenu() {
+        val menu = binding.toolbar.menu
+        menu.findItem(R.id.action_selection_share)?.isVisible = selectionMode
+        menu.findItem(R.id.action_selection_delete)?.isVisible = selectionMode
+        menu.findItem(R.id.action_search)?.isVisible = !selectionMode
+        menu.findItem(R.id.action_sort)?.isVisible = !selectionMode
+        menu.findItem(R.id.action_open_file)?.isVisible = !selectionMode
+        menu.findItem(R.id.action_open_url)?.isVisible = !selectionMode
+        menu.findItem(R.id.action_default)?.isVisible = !selectionMode
+        menu.findItem(R.id.action_update)?.isVisible = !selectionMode
+        menu.findItem(R.id.action_refresh)?.isVisible = !selectionMode
+        menu.findItem(R.id.action_paste)?.isVisible = !selectionMode && pendingCopy != null
+    }
+
+    private fun beginSelection() {
+        selectionMode = true
+        updateSelectionMenu()
+        refreshList()
+    }
+
+    private fun toggleVideoSelection(video: VideoItem) {
+        if (!selectionMode) beginSelection()
+        val id = video.uri.toString()
+        if (!selectedVideoIds.add(id)) selectedVideoIds.remove(id)
+        if (selectedVideoIds.isEmpty() && selectedFolderIds.isEmpty()) selectionMode = false
+        refreshList()
+    }
+
+    private fun toggleFolderSelection(folder: FolderItem) {
+        if (!selectionMode) beginSelection()
+        if (!selectedFolderIds.add(folder.bucketId)) selectedFolderIds.remove(folder.bucketId)
+        if (selectedVideoIds.isEmpty() && selectedFolderIds.isEmpty()) selectionMode = false
+        refreshList()
+    }
+
+    private fun clearSelection() {
+        selectionMode = false
+        selectedVideoIds.clear()
+        selectedFolderIds.clear()
+        refreshList()
+    }
+
+    private fun selectedVideos(): List<VideoItem> {
+        val ids = selectedVideoUris()
+        return allVideos.filter { ids.contains(it.uri.toString()) }
+    }
+
+    private fun shareSelected() {
+        val videos = selectedVideos()
+        if (videos.isEmpty()) return
+        val uris = ArrayList(videos.map { it.uri })
+        val send = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+            type = "video/*"
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+            clipData = ClipData.newUri(contentResolver, videos.first().name, videos.first().uri).also { clip ->
+                videos.drop(1).forEach { clip.addItem(ClipData.Item(it.uri)) }
+            }
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(Intent.createChooser(send, "Bagikan video terpilih"))
+    }
+
+    private fun deleteSelected() {
+        val videos = selectedVideos()
+        if (videos.isEmpty()) return
+        AlertDialog.Builder(this)
+            .setTitle("Hapus ${videos.size} video?")
+            .setMessage("Video yang dipilih akan dihapus dari perangkat.")
+            .setPositiveButton("Hapus") { _, _ ->
+                var deleted = 0
+                var failed = 0
+                videos.forEach { video ->
+                    try {
+                        if (contentResolver.delete(video.uri, null, null) > 0) deleted++ else failed++
+                    } catch (_: Exception) { failed++ }
+                }
+                clearSelection()
+                Toast.makeText(this, "$deleted video dihapus${if (failed > 0) ", $failed gagal" else ""}", Toast.LENGTH_LONG).show()
+                loadVideos()
+            }
+            .setNegativeButton("Batal", null)
+            .show()
     }
 
     private fun updateEmpty(isEmpty: Boolean) {
@@ -254,6 +359,8 @@ class MainActivity : AppCompatActivity() {
             R.id.action_default -> showDefaultDialog()
             R.id.action_update -> checkUpdate(true)
             R.id.action_paste -> pasteVideo()
+            R.id.action_selection_share -> shareSelected()
+            R.id.action_selection_delete -> deleteSelected()
             R.id.action_refresh -> {
                 if (hasPermission()) loadVideos() else requestPermissionOrSettings()
             }
@@ -387,50 +494,6 @@ class MainActivity : AppCompatActivity() {
         intent.data = uri
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         startActivity(intent)
-    }
-
-    private fun showVideoActions(video: VideoItem) {
-        val actions = arrayOf("Bagikan", "Salin tautan file", "Hapus")
-        AlertDialog.Builder(this)
-            .setTitle(video.name)
-            .setItems(actions) { _, which ->
-                when (which) {
-                    0 -> {
-                        val send = Intent(Intent.ACTION_SEND).apply {
-                            type = "video/*"
-                            putExtra(Intent.EXTRA_STREAM, video.uri)
-                            clipData = ClipData.newRawUri(video.name, video.uri)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-                        startActivity(Intent.createChooser(send, "Bagikan video"))
-                    }
-                    1 -> {
-                        pendingCopy = video
-                        binding.toolbar.menu.findItem(R.id.action_paste)?.isVisible = true
-                        Toast.makeText(this, "Video disalin. Pilih Tempel untuk membuat salinan.", Toast.LENGTH_LONG).show()
-                    }
-                    2 -> AlertDialog.Builder(this)
-                        .setMessage("Apakah Anda yakin ingin menghapus video ini?")
-                        .setPositiveButton("Hapus") { _, _ ->
-                            try {
-                                val deleted = contentResolver.delete(video.uri, null, null)
-                                if (deleted > 0) {
-                                    Toast.makeText(this, "Video dihapus", Toast.LENGTH_SHORT).show()
-                                    loadVideos()
-                                } else {
-                                    Toast.makeText(this, "Video tidak dapat dihapus", Toast.LENGTH_LONG).show()
-                                }
-                            } catch (e: SecurityException) {
-                                Toast.makeText(this, "Izin penghapusan ditolak. Hapus melalui File Manager.", Toast.LENGTH_LONG).show()
-                            } catch (e: Exception) {
-                                Toast.makeText(this, "Gagal menghapus video", Toast.LENGTH_LONG).show()
-                            }
-                        }
-                        .setNegativeButton("Batal", null)
-                        .show()
-                }
-            }
-            .show()
     }
 
     private fun pasteVideo() {
