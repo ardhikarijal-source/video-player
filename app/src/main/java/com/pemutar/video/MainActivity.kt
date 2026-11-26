@@ -1,12 +1,8 @@
 package com.pemutar.video
 
 import android.Manifest
-import android.app.DownloadManager
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.ClipData
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -53,8 +49,6 @@ class MainActivity : AppCompatActivity() {
     private var updateChecked = false
     private var askedNotifPermission = false
     private var lastRelease: Updater.Release? = null
-    private var downloadId = -1L
-    private var pendingApk: File? = null
     private var pendingCopy: VideoItem? = null
 
     private val videoAdapter = VideoAdapter({ video -> playVideo(video) }, { video -> showVideoActions(video) })
@@ -79,21 +73,6 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) startPlayerWithUri(uri)
         }
-
-    private val downloadReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) ?: -1L
-            if (id == -1L || id != downloadId) return
-            downloadId = -1L
-            val release = lastRelease ?: return
-            val file = Updater.apkFile(this@MainActivity, release.version)
-            if (file.exists() && file.length() > 0L) {
-                installUpdate(file)
-            } else {
-                Toast.makeText(this@MainActivity, R.string.update_download_failed, Toast.LENGTH_LONG).show()
-            }
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -124,13 +103,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        ContextCompat.registerReceiver(
-            this,
-            downloadReceiver,
-            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            ContextCompat.RECEIVER_EXPORTED
-        )
-
         if (!hasPermission()) {
             askedPermission = true
             permissionLauncher.launch(requiredPermission())
@@ -143,20 +115,9 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (hasPermission()) loadVideos() else refreshList()
 
-        // Lanjutkan pemasangan jika pengguna baru saja memberi izin "pasang aplikasi lain"
-        val apk = pendingApk
-        if (apk != null && Updater.canInstall(this)) {
-            pendingApk = null
-            Updater.installApk(this, apk)
-        }
     }
 
     override fun onDestroy() {
-        try {
-            unregisterReceiver(downloadReceiver)
-        } catch (e: Exception) {
-            // sudah dilepas
-        }
         executor.shutdownNow()
         super.onDestroy()
     }
@@ -405,35 +366,17 @@ class MainActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle(R.string.update_title)
             .setMessage(getString(R.string.update_message, release.version, BuildConfig.VERSION_NAME, notes))
-            .setPositiveButton(R.string.update_now) { _, _ -> startDownload(release) }
+            .setPositiveButton(R.string.update_now) { _, _ -> openReleasePage(release) }
             .setNegativeButton(R.string.update_later, null)
             .show()
     }
 
-    private fun startDownload(release: Updater.Release) {
-        // Jangan memasang APK secara langsung dari aplikasi. Buka halaman rilis resmi
-        // agar Android/Play Protect dapat memeriksa paket sebelum pengguna memasangnya.
+    private fun openReleasePage(release: Updater.Release) {
+        // Pengguna mengunduh APK dan menyetujui pemasangan melalui Android.
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ardhikarijal-source/video-player/releases/latest"))
-            startActivity(intent)
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(release.releaseUrl)))
         } catch (e: Exception) {
-            Toast.makeText(this, R.string.update_download_failed, Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun installUpdate(file: File) {
-        if (Updater.canInstall(this)) {
-            Updater.installApk(this, file)
-        } else {
-            pendingApk = file
-            AlertDialog.Builder(this)
-                .setTitle(R.string.update_permission_title)
-                .setMessage(R.string.update_permission_message)
-                .setPositiveButton(R.string.default_open_settings) { _, _ ->
-                    Updater.openInstallSettings(this)
-                }
-                .setNegativeButton(R.string.dialog_cancel) { _, _ -> pendingApk = null }
-                .show()
+            Toast.makeText(this, R.string.update_failed, Toast.LENGTH_LONG).show()
         }
     }
 
