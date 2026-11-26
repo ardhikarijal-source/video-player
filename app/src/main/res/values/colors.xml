@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Tema gelap dengan aksen persik/oranye lembut -->
-    <color name="bg">#FF141416</color>
-    <color name="surface">#FF232327</color>
-    <color name="surface_high">#FF2E2E34</color>
-    <color name="accent">#FFFFB985</color>
+    <color name="bg">#FF151515</color>
+    <color name="surface">#FF202023</color>
+    <color name="surface_high">#FF2B2B2F</color>
+    <color name="accent">#FFFFBC91</color>
     <color name="on_accent">#FF2B1A0C</color>
     <color name="text_primary">#FFF2F2F4</color>
-    <color name="text_secondary">#FFA0A0AA</color>
+    <color name="text_secondary">#FFB0B0B6</color>
     <color name="glass">#7A000000</color>
     <color name="glass_stroke">#33FFFFFF</color>
 

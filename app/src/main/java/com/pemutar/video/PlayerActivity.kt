@@ -222,14 +222,36 @@ class PlayerActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         savePosition()
-        if (!isInPictureInPictureMode) player?.pause()
+        // PiP boleh terus bermain selagi jendelanya masih terlihat. Begitu Activity
+        // benar-benar ditutup, hentikan playback walaupun flag PiP masih aktif.
+        if (isFinishing) {
+            stopPlaybackAndClear()
+        } else if (!isInPictureInPictureMode) {
+            player?.pause()
+        }
     }
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        stopPlaybackAndClear()
         player?.release()
         player = null
         super.onDestroy()
+    }
+
+    private fun closePlayer() {
+        savePosition()
+        stopPlaybackAndClear()
+        finish()
+    }
+
+    private fun stopPlaybackAndClear() {
+        player?.run {
+            playWhenReady = false
+            pause()
+            stop()
+            clearMediaItems()
+        }
     }
 
     // ---------------------------------------------------------------- setup
@@ -280,7 +302,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun setupControls() {
-        binding.btnClose.setOnClickListener { finish() }
+        binding.btnClose.setOnClickListener { closePlayer() }
         binding.btnPip.setOnClickListener { tryEnterPip(true) }
         binding.btnAspect.setOnClickListener { cycleResize(); scheduleAutoHide() }
         binding.btnShare.setOnClickListener { shareCurrent() }

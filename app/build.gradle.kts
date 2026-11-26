@@ -12,8 +12,8 @@ android {
         minSdk = 24
         targetSdk = 34
         // Lanjutan dari versi sebelumnya (1 / "1.0"). Naikkan KEDUANYA setiap rilis baru.
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
     }
 
     // Kunci tanda tangan dibaca dari variabel lingkungan (diisi GitHub Secrets saat build).

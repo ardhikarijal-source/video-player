@@ -23,84 +23,66 @@
         android:padding="14dp"
         android:visibility="gone">
 
-        <!-- Kiri atas: tutup + pil (PiP, rasio layar, bagikan) -->
+        <!-- Baris atas responsif: kontrol ikon dan volume berada dalam satu baris -->
         <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_gravity="top"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <ImageButton
                 android:id="@+id/btnClose"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
                 android:background="@drawable/bg_glass_circle"
                 android:contentDescription="@string/cd_close"
-                android:padding="13dp"
+                android:padding="11dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_close"
                 android:tint="@color/white" />
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="48dp"
-                android:layout_marginStart="10dp"
-                android:background="@drawable/bg_glass"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="6dp">
+            <ImageButton
+                android:id="@+id/btnPip"
+                android:layout_width="40dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_pip"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_pip"
+                android:tint="@color/white" />
 
-                <ImageButton
-                    android:id="@+id/btnPip"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/cd_pip"
-                    android:padding="10dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_pip"
-                    android:tint="@color/white" />
+            <ImageButton
+                android:id="@+id/btnAspect"
+                android:layout_width="40dp"
+                android:layout_height="42dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_aspect"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_aspect"
+                android:tint="@color/white" />
 
-                <ImageButton
-                    android:id="@+id/btnAspect"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/cd_aspect"
-                    android:padding="10dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_aspect"
-                    android:tint="@color/white" />
-
-                <ImageButton
-                    android:id="@+id/btnShare"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/cd_share"
-                    android:padding="10dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_share"
-                    android:tint="@color/white" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Kanan atas: slider volume -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:layout_gravity="top|end"
-            android:background="@drawable/bg_glass"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="8dp"
-            android:paddingEnd="16dp">
+            <ImageButton
+                android:id="@+id/btnShare"
+                android:layout_width="40dp"
+                android:layout_height="42dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_share"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_share"
+                android:tint="@color/white" />
 
             <SeekBar
                 android:id="@+id/seekVolume"
-                android:layout_width="150dp"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minWidth="42dp"
+                android:layout_marginStart="4dp"
                 android:contentDescription="@string/cd_volume"
                 android:progressBackgroundTint="#44FFFFFF"
                 android:progressTint="@color/white"
@@ -318,31 +300,40 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
+                <ImageButton
                     android:id="@+id/btnRotate"
-                    style="@style/Pill"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:drawableStart="@drawable/ic_rotate"
-                    android:text="@string/pill_rotate" />
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_glass_circle"
+                    android:contentDescription="@string/pill_rotate"
+                    android:padding="11dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_rotate"
+                    android:tint="@color/white" />
 
-                <TextView
+                <ImageButton
                     android:id="@+id/btnLock"
-                    style="@style/Pill"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="8dp"
-                    android:drawableStart="@drawable/ic_lock"
-                    android:text="@string/pill_lock" />
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_glass_circle"
+                    android:contentDescription="@string/pill_lock"
+                    android:padding="11dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_lock"
+                    android:tint="@color/white" />
 
-                <TextView
+                <ImageButton
                     android:id="@+id/btnRepeat"
-                    style="@style/Pill"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="8dp"
-                    android:drawableStart="@drawable/ic_repeat"
-                    android:text="@string/pill_repeat" />
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_glass_circle"
+                    android:contentDescription="@string/pill_repeat"
+                    android:padding="11dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_repeat"
+                    android:tint="@color/white" />
 
                 <View
                     android:layout_width="0dp"
