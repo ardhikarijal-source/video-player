@@ -5,7 +5,6 @@ import android.app.DownloadManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
@@ -15,6 +14,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.provider.MediaStore
+import android.os.Environment
+import android.content.ContentValues
 import android.view.View
 import android.widget.EditText
 import android.widget.Toast
@@ -53,6 +55,7 @@ class MainActivity : AppCompatActivity() {
     private var lastRelease: Updater.Release? = null
     private var downloadId = -1L
     private var pendingApk: File? = null
+    private var pendingCopy: VideoItem? = null
 
     private val videoAdapter = VideoAdapter({ video -> playVideo(video) }, { video -> showVideoActions(video) })
     private val folderAdapter = FolderAdapter { folder -> openFolder(folder) }
@@ -289,6 +292,7 @@ class MainActivity : AppCompatActivity() {
             R.id.action_open_url -> showUrlDialog()
             R.id.action_default -> showDefaultDialog()
             R.id.action_update -> checkUpdate(true)
+            R.id.action_paste -> pasteVideo()
             R.id.action_refresh -> {
                 if (hasPermission()) loadVideos() else requestPermissionOrSettings()
             }
@@ -458,9 +462,9 @@ class MainActivity : AppCompatActivity() {
                         startActivity(Intent.createChooser(send, "Bagikan video"))
                     }
                     1 -> {
-                        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newUri(contentResolver, video.name, video.uri))
-                        Toast.makeText(this, "Tautan video disalin", Toast.LENGTH_SHORT).show()
+                        pendingCopy = video
+                        binding.toolbar.menu.findItem(R.id.action_paste)?.isVisible = true
+                        Toast.makeText(this, "Video disalin. Pilih Tempel untuk membuat salinan.", Toast.LENGTH_LONG).show()
                     }
                     2 -> AlertDialog.Builder(this)
                         .setMessage("Apakah Anda yakin ingin menghapus video ini?")
@@ -486,6 +490,63 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun pasteVideo() {
+        val source = pendingCopy ?: return
+        val destinationFolder = currentFolderName.takeIf { currentFolderId != null && it.isNotBlank() }
+        binding.progress.visibility = View.VISIBLE
+        executor.execute {
+            var outputUri: Uri? = null
+            try {
+                val resolver = contentResolver
+                val extension = source.name.substringAfterLast(".", "").takeIf { it.isNotBlank() } ?: "mp4"
+                val baseName = source.name.substringBeforeLast(".", source.name)
+                val copyName = "$baseName (salinan).$extension"
+                val values = ContentValues().apply {
+                    put(MediaStore.Video.Media.DISPLAY_NAME, copyName)
+                    put(MediaStore.Video.Media.MIME_TYPE, "video/$extension".lowercase())
+                    if (Build.VERSION.SDK_INT >= 29) {
+                        val folder = destinationFolder?.let { "${Environment.DIRECTORY_MOVIES}/$it" } ?: Environment.DIRECTORY_MOVIES
+                        put(MediaStore.Video.Media.RELATIVE_PATH, folder)
+                        put(MediaStore.Video.Media.IS_PENDING, 1)
+                    } else {
+                        val folder = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), destinationFolder ?: "")
+                        if (!folder.exists()) folder.mkdirs()
+                        put(MediaStore.Video.Media.DATA, File(folder, copyName).absolutePath)
+                    }
+                }
+                val collection = if (Build.VERSION.SDK_INT >= 29) MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL) else MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                outputUri = resolver.insert(collection, values) ?: throw IllegalStateException("Tidak dapat membuat file tujuan")
+                resolver.openInputStream(source.uri).use { input ->
+                    if (input == null) throw IllegalStateException("File sumber tidak dapat dibaca")
+                    resolver.openOutputStream(outputUri!!, "w").use { output ->
+                        if (output == null) throw IllegalStateException("File tujuan tidak dapat ditulis")
+                        input.copyTo(output, 1024 * 1024)
+                    }
+                }
+                if (Build.VERSION.SDK_INT >= 29) {
+                    val done = ContentValues().apply { put(MediaStore.Video.Media.IS_PENDING, 0) }
+                    resolver.update(outputUri!!, done, null, null)
+                }
+                mainHandler.post {
+                    if (!isDestroyed) {
+                        pendingCopy = null
+                        binding.toolbar.menu.findItem(R.id.action_paste)?.isVisible = false
+                        binding.progress.visibility = View.GONE
+                        Toast.makeText(this, "Salinan video berhasil dibuat", Toast.LENGTH_SHORT).show()
+                        loadVideos()
+                    }
+                }
+            } catch (e: Exception) {
+                outputUri?.let { try { contentResolver.delete(it, null, null) } catch (_: Exception) {} }
+                mainHandler.post {
+                    if (!isDestroyed) {
+                        binding.progress.visibility = View.GONE
+                        Toast.makeText(this, "Gagal menyalin video: ${e.message ?: "kesalahan file"}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+    }
     private fun playVideo(video: VideoItem) {
         // Putar bersama video lain di folder yang sama sebagai daftar putar
         val sameFolder = sortVideos(allVideos.filter { it.bucketId == video.bucketId })
