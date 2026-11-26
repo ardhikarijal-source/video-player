@@ -11,7 +11,8 @@ import com.pemutar.video.databinding.ItemFolderBinding
 import com.pemutar.video.databinding.ItemVideoBinding
 
 class VideoAdapter(
-    private val onClick: (VideoItem) -> Unit
+    private val onClick: (VideoItem) -> Unit,
+    private val onLongClick: (VideoItem) -> Unit
 ) : RecyclerView.Adapter<VideoAdapter.VH>() {
 
     private var items: List<VideoItem> = emptyList()
@@ -53,6 +54,10 @@ class VideoAdapter(
 
         Glide.with(holder.b.thumb).load(v.uri).centerCrop().into(holder.b.thumb)
         holder.itemView.setOnClickListener { onClick(v) }
+        holder.itemView.setOnLongClickListener {
+            onLongClick(v)
+            true
+        }
     }
 }
 
