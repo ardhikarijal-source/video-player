@@ -67,6 +67,7 @@
 
             <ImageButton
                 android:id="@+id/btnShare"
+                android:visibility="gone"
                 android:layout_width="40dp"
                 android:layout_height="42dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
@@ -375,6 +376,56 @@
             </LinearLayout>
         </LinearLayout>
     </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/volumeHud"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|start"
+        android:layout_marginStart="28dp"
+        android:background="@drawable/bg_glass"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/tvVolumePercent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/white"
+            android:textSize="14sp" />
+        <ProgressBar
+            android:id="@+id/barVolume"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:max="100"
+            android:progressTint="@color/white" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/brightnessHud"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|end"
+        android:layout_marginEnd="28dp"
+        android:background="@drawable/bg_glass"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/tvBrightnessPercent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/white"
+            android:textSize="14sp" />
+        <ProgressBar
+            android:id="@+id/barBrightness"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:max="100"
+            android:progressTint="@color/white" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tvHud"
