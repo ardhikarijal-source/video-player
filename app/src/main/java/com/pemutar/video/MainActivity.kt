@@ -1,11 +1,8 @@
 package com.pemutar.video
 
 import android.Manifest
-import android.app.DownloadManager
-import android.content.BroadcastReceiver
-import android.content.Context
+import android.content.ClipData
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -13,6 +10,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.provider.MediaStore
+import android.os.Environment
+import android.content.ContentValues
 import android.view.View
 import android.widget.EditText
 import android.widget.Toast
@@ -49,10 +49,9 @@ class MainActivity : AppCompatActivity() {
     private var updateChecked = false
     private var askedNotifPermission = false
     private var lastRelease: Updater.Release? = null
-    private var downloadId = -1L
-    private var pendingApk: File? = null
+    private var pendingCopy: VideoItem? = null
 
-    private val videoAdapter = VideoAdapter { video -> playVideo(video) }
+    private val videoAdapter = VideoAdapter({ video -> playVideo(video) }, { video -> showVideoActions(video) })
     private val folderAdapter = FolderAdapter { folder -> openFolder(folder) }
 
     private val gridManager by lazy { GridLayoutManager(this, 2) }
@@ -74,21 +73,6 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) startPlayerWithUri(uri)
         }
-
-    private val downloadReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) ?: -1L
-            if (id == -1L || id != downloadId) return
-            downloadId = -1L
-            val release = lastRelease ?: return
-            val file = Updater.apkFile(this@MainActivity, release.version)
-            if (file.exists() && file.length() > 0L) {
-                installUpdate(file)
-            } else {
-                Toast.makeText(this@MainActivity, R.string.update_download_failed, Toast.LENGTH_LONG).show()
-            }
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -119,13 +103,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        ContextCompat.registerReceiver(
-            this,
-            downloadReceiver,
-            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            ContextCompat.RECEIVER_EXPORTED
-        )
-
         if (!hasPermission()) {
             askedPermission = true
             permissionLauncher.launch(requiredPermission())
@@ -138,20 +115,9 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (hasPermission()) loadVideos() else refreshList()
 
-        // Lanjutkan pemasangan jika pengguna baru saja memberi izin "pasang aplikasi lain"
-        val apk = pendingApk
-        if (apk != null && Updater.canInstall(this)) {
-            pendingApk = null
-            Updater.installApk(this, apk)
-        }
     }
 
     override fun onDestroy() {
-        try {
-            unregisterReceiver(downloadReceiver)
-        } catch (e: Exception) {
-            // sudah dilepas
-        }
         executor.shutdownNow()
         super.onDestroy()
     }
@@ -287,6 +253,7 @@ class MainActivity : AppCompatActivity() {
             R.id.action_open_url -> showUrlDialog()
             R.id.action_default -> showDefaultDialog()
             R.id.action_update -> checkUpdate(true)
+            R.id.action_paste -> pasteVideo()
             R.id.action_refresh -> {
                 if (hasPermission()) loadVideos() else requestPermissionOrSettings()
             }
@@ -399,34 +366,17 @@ class MainActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle(R.string.update_title)
             .setMessage(getString(R.string.update_message, release.version, BuildConfig.VERSION_NAME, notes))
-            .setPositiveButton(R.string.update_now) { _, _ -> startDownload(release) }
+            .setPositiveButton(R.string.update_now) { _, _ -> openReleasePage(release) }
             .setNegativeButton(R.string.update_later, null)
             .show()
     }
 
-    private fun startDownload(release: Updater.Release) {
-        lastRelease = release
+    private fun openReleasePage(release: Updater.Release) {
+        // Pengguna mengunduh APK dan menyetujui pemasangan melalui Android.
         try {
-            downloadId = Updater.enqueueDownload(this, release)
-            Toast.makeText(this, R.string.update_downloading, Toast.LENGTH_SHORT).show()
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(release.releaseUrl)))
         } catch (e: Exception) {
-            Toast.makeText(this, R.string.update_download_failed, Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun installUpdate(file: File) {
-        if (Updater.canInstall(this)) {
-            Updater.installApk(this, file)
-        } else {
-            pendingApk = file
-            AlertDialog.Builder(this)
-                .setTitle(R.string.update_permission_title)
-                .setMessage(R.string.update_permission_message)
-                .setPositiveButton(R.string.default_open_settings) { _, _ ->
-                    Updater.openInstallSettings(this)
-                }
-                .setNegativeButton(R.string.dialog_cancel) { _, _ -> pendingApk = null }
-                .show()
+            Toast.makeText(this, R.string.update_failed, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -439,6 +389,107 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
+    private fun showVideoActions(video: VideoItem) {
+        val actions = arrayOf("Bagikan", "Salin tautan file", "Hapus")
+        AlertDialog.Builder(this)
+            .setTitle(video.name)
+            .setItems(actions) { _, which ->
+                when (which) {
+                    0 -> {
+                        val send = Intent(Intent.ACTION_SEND).apply {
+                            type = "video/*"
+                            putExtra(Intent.EXTRA_STREAM, video.uri)
+                            clipData = ClipData.newRawUri(video.name, video.uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        startActivity(Intent.createChooser(send, "Bagikan video"))
+                    }
+                    1 -> {
+                        pendingCopy = video
+                        binding.toolbar.menu.findItem(R.id.action_paste)?.isVisible = true
+                        Toast.makeText(this, "Video disalin. Pilih Tempel untuk membuat salinan.", Toast.LENGTH_LONG).show()
+                    }
+                    2 -> AlertDialog.Builder(this)
+                        .setMessage("Apakah Anda yakin ingin menghapus video ini?")
+                        .setPositiveButton("Hapus") { _, _ ->
+                            try {
+                                val deleted = contentResolver.delete(video.uri, null, null)
+                                if (deleted > 0) {
+                                    Toast.makeText(this, "Video dihapus", Toast.LENGTH_SHORT).show()
+                                    loadVideos()
+                                } else {
+                                    Toast.makeText(this, "Video tidak dapat dihapus", Toast.LENGTH_LONG).show()
+                                }
+                            } catch (e: SecurityException) {
+                                Toast.makeText(this, "Izin penghapusan ditolak. Hapus melalui File Manager.", Toast.LENGTH_LONG).show()
+                            } catch (e: Exception) {
+                                Toast.makeText(this, "Gagal menghapus video", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                        .setNegativeButton("Batal", null)
+                        .show()
+                }
+            }
+            .show()
+    }
+
+    private fun pasteVideo() {
+        val source = pendingCopy ?: return
+        val destinationFolder = currentFolderName.takeIf { currentFolderId != null && it.isNotBlank() }
+        binding.progress.visibility = View.VISIBLE
+        executor.execute {
+            var outputUri: Uri? = null
+            try {
+                val resolver = contentResolver
+                val extension = source.name.substringAfterLast(".", "").takeIf { it.isNotBlank() } ?: "mp4"
+                val baseName = source.name.substringBeforeLast(".", source.name)
+                val copyName = "$baseName (salinan).$extension"
+                val values = ContentValues().apply {
+                    put(MediaStore.Video.Media.DISPLAY_NAME, copyName)
+                    put(MediaStore.Video.Media.MIME_TYPE, "video/$extension".lowercase())
+                    if (Build.VERSION.SDK_INT >= 29) {
+                        val folder = destinationFolder?.let { "${Environment.DIRECTORY_MOVIES}/$it" } ?: Environment.DIRECTORY_MOVIES
+                        put(MediaStore.Video.Media.RELATIVE_PATH, folder)
+                        put(MediaStore.Video.Media.IS_PENDING, 1)
+                    } else {
+                        val folder = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), destinationFolder ?: "")
+                        if (!folder.exists()) folder.mkdirs()
+                        put(MediaStore.Video.Media.DATA, File(folder, copyName).absolutePath)
+                    }
+                }
+                val collection = if (Build.VERSION.SDK_INT >= 29) MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL) else MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                outputUri = resolver.insert(collection, values) ?: throw IllegalStateException("Tidak dapat membuat file tujuan")
+                resolver.openInputStream(source.uri).use { input ->
+                    if (input == null) throw IllegalStateException("File sumber tidak dapat dibaca")
+                    resolver.openOutputStream(outputUri!!, "w").use { output ->
+                        if (output == null) throw IllegalStateException("File tujuan tidak dapat ditulis")
+                        input.copyTo(output, 1024 * 1024)
+                    }
+                }
+                if (Build.VERSION.SDK_INT >= 29) {
+                    val done = ContentValues().apply { put(MediaStore.Video.Media.IS_PENDING, 0) }
+                    resolver.update(outputUri!!, done, null, null)
+                }
+                mainHandler.post {
+                    if (!isDestroyed) {
+                        pendingCopy = null
+                        binding.toolbar.menu.findItem(R.id.action_paste)?.isVisible = false
+                        binding.progress.visibility = View.GONE
+                        Toast.makeText(this, "Salinan video berhasil dibuat", Toast.LENGTH_SHORT).show()
+                        loadVideos()
+                    }
+                }
+            } catch (e: Exception) {
+                outputUri?.let { try { contentResolver.delete(it, null, null) } catch (_: Exception) {} }
+                mainHandler.post {
+                    if (!isDestroyed) {
+                        binding.progress.visibility = View.GONE
+                        Toast.makeText(this, "Gagal menyalin video: ${e.message ?: "kesalahan file"}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+    }
     private fun playVideo(video: VideoItem) {
         // Putar bersama video lain di folder yang sama sebagai daftar putar
         val sameFolder = sortVideos(allVideos.filter { it.bucketId == video.bucketId })

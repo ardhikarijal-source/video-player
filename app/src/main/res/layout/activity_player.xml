@@ -42,17 +42,6 @@
                 android:src="@drawable/ic_close"
                 android:tint="@color/white" />
 
-            <ImageButton
-                android:id="@+id/btnPip"
-                android:layout_width="40dp"
-                android:layout_height="42dp"
-                android:layout_marginStart="4dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/cd_pip"
-                android:padding="10dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_pip"
-                android:tint="@color/white" />
 
             <ImageButton
                 android:id="@+id/btnAspect"
@@ -67,6 +56,7 @@
 
             <ImageButton
                 android:id="@+id/btnShare"
+                android:visibility="gone"
                 android:layout_width="40dp"
                 android:layout_height="42dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
@@ -76,11 +66,17 @@
                 android:src="@drawable/ic_share"
                 android:tint="@color/white" />
 
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
             <SeekBar
                 android:id="@+id/seekVolume"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:visibility="gone"
                 android:minWidth="42dp"
                 android:layout_marginStart="4dp"
                 android:contentDescription="@string/cd_volume"
@@ -88,12 +84,27 @@
                 android:progressTint="@color/white"
                 android:thumbTint="@color/white" />
 
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+            <ImageButton
+                android:id="@+id/btnPip"
+                android:layout_width="40dp"
+                android:layout_height="42dp"
                 android:layout_marginStart="4dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_volume" />
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_pip"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_pip"
+                android:tint="@color/white" />
+            <ImageButton
+                android:id="@+id/btnShareTop"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_glass_circle"
+                android:contentDescription="@string/cd_share"
+                android:padding="11dp"
+                android:src="@drawable/ic_share"
+                android:tint="@color/white" />
         </LinearLayout>
 
         <!-- Tengah: mundur 10, putar/jeda, maju 10 -->
@@ -365,6 +376,56 @@
             </LinearLayout>
         </LinearLayout>
     </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/volumeHud"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|start"
+        android:layout_marginStart="28dp"
+        android:background="@drawable/bg_glass"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/tvVolumePercent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/white"
+            android:textSize="14sp" />
+        <ProgressBar
+            android:id="@+id/barVolume"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:max="100"
+            android:progressTint="@color/white" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/brightnessHud"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|end"
+        android:layout_marginEnd="28dp"
+        android:background="@drawable/bg_glass"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/tvBrightnessPercent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/white"
+            android:textSize="14sp" />
+        <ProgressBar
+            android:id="@+id/barBrightness"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:max="100"
+            android:progressTint="@color/white" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tvHud"
