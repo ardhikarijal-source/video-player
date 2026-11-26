@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Panah melingkar berlawanan arah jarum jam. Angka "10" dipasang terpisah sebagai TextView.
+     Untuk tombol maju, ImageView yang sama dicerminkan dengan android:scaleX="-1". -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,5A7,7 0 1 1 5,12"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.8" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,1.8L7.6,5L12,8.2z" />
+</vector>

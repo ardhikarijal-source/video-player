@@ -5,104 +5,375 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
+    <!-- Kontrol bawaan dimatikan; semua kontrol ada di lapisan "controls" di bawah -->
     <androidx.media3.ui.PlayerView
         android:id="@+id/playerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:resize_mode="fit"
         app:show_buffering="when_playing"
-        app:show_timeout="3500"
-        app:surface_type="surface_view" />
+        app:surface_type="surface_view"
+        app:use_controller="false" />
 
-    <LinearLayout
-        android:id="@+id/topBar"
+    <FrameLayout
+        android:id="@+id/controls"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top"
-        android:background="@drawable/bg_top_gradient"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="4dp"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_scrim"
+        android:padding="14dp"
         android:visibility="gone">
 
-        <ImageButton
-            android:id="@+id/btnBack"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/cd_back"
-            android:padding="10dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_back"
-            android:tint="@android:color/white" />
-
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="0dp"
+        <!-- Kiri atas: tutup + pil (PiP, rasio layar, bagikan) -->
+        <LinearLayout
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="8dp"
-            android:layout_weight="1"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@android:color/white"
-            android:textSize="16sp" />
+            android:layout_gravity="top|start"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <ImageButton
-            android:id="@+id/btnSubtitle"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/cd_subtitle"
-            android:padding="10dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_subtitle"
-            android:tint="@android:color/white" />
+            <ImageButton
+                android:id="@+id/btnClose"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_glass_circle"
+                android:contentDescription="@string/cd_close"
+                android:padding="13dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_close"
+                android:tint="@color/white" />
 
-        <ImageButton
-            android:id="@+id/btnAspect"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/cd_aspect"
-            android:padding="10dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_aspect"
-            android:tint="@android:color/white" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/bg_glass"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="6dp">
 
-        <ImageButton
-            android:id="@+id/btnRotate"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/cd_rotate"
-            android:padding="10dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_rotate"
-            android:tint="@android:color/white" />
+                <ImageButton
+                    android:id="@+id/btnPip"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/cd_pip"
+                    android:padding="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_pip"
+                    android:tint="@color/white" />
 
-        <ImageButton
-            android:id="@+id/btnPip"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/cd_pip"
-            android:padding="10dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_pip"
-            android:tint="@android:color/white" />
+                <ImageButton
+                    android:id="@+id/btnAspect"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/cd_aspect"
+                    android:padding="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_aspect"
+                    android:tint="@color/white" />
 
-        <ImageButton
-            android:id="@+id/btnLock"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/cd_lock"
-            android:padding="10dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_lock"
-            android:tint="@android:color/white" />
-    </LinearLayout>
+                <ImageButton
+                    android:id="@+id/btnShare"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/cd_share"
+                    android:padding="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_share"
+                    android:tint="@color/white" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Kanan atas: slider volume -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_gravity="top|end"
+            android:background="@drawable/bg_glass"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="16dp">
+
+            <SeekBar
+                android:id="@+id/seekVolume"
+                android:layout_width="150dp"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/cd_volume"
+                android:progressBackgroundTint="#44FFFFFF"
+                android:progressTint="@color/white"
+                android:thumbTint="@color/white" />
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="4dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_volume" />
+        </LinearLayout>
+
+        <!-- Tengah: mundur 10, putar/jeda, maju 10 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:id="@+id/btnReplay"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:background="@drawable/bg_glass_circle"
+                android:clickable="true"
+                android:contentDescription="@string/cd_replay"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_replay" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="10"
+                    android:textColor="@color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </FrameLayout>
+
+            <ImageButton
+                android:id="@+id/btnPlayPause"
+                android:layout_width="78dp"
+                android:layout_height="78dp"
+                android:layout_marginHorizontal="34dp"
+                android:background="@drawable/bg_glass_circle"
+                android:contentDescription="@string/cd_playpause"
+                android:padding="22dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_pause"
+                android:tint="@color/white" />
+
+            <FrameLayout
+                android:id="@+id/btnForward"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:background="@drawable/bg_glass_circle"
+                android:clickable="true"
+                android:contentDescription="@string/cd_forward"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:scaleX="-1"
+                    android:src="@drawable/ic_replay" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="10"
+                    android:textColor="@color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </FrameLayout>
+        </LinearLayout>
+
+        <!-- Bawah: judul + pil (subtitle, audio, kecepatan), seek bar, tombol -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="bottom"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvSubTop"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="#CCFFFFFF"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/tvTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="@color/white"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="12dp"
+                    android:background="@drawable/bg_glass"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="8dp">
+
+                    <ImageButton
+                        android:id="@+id/btnCc"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/cd_subtitle"
+                        android:padding="10dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_subtitle"
+                        android:tint="@color/white" />
+
+                    <ImageButton
+                        android:id="@+id/btnAudio"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/cd_audio"
+                        android:padding="10dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_audio"
+                        android:tint="@color/white" />
+
+                    <ImageButton
+                        android:id="@+id/btnSpeed"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/cd_speed"
+                        android:padding="10dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_speed"
+                        android:tint="@color/white" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Seek bar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvPosition"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="44dp"
+                    android:text="00:00"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
+
+                <SeekBar
+                    android:id="@+id/seekBar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="10000"
+                    android:progressBackgroundTint="#44FFFFFF"
+                    android:progressTint="@color/white"
+                    android:secondaryProgressTint="#66FFFFFF"
+                    android:thumbTint="@color/accent" />
+
+                <TextView
+                    android:id="@+id/tvDuration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:minWidth="44dp"
+                    android:text="--:--"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Baris tombol: kiri = rotasi/kunci/ulangi, kanan = sebelumnya/berikutnya -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/btnRotate"
+                    style="@style/Pill"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:drawableStart="@drawable/ic_rotate"
+                    android:text="@string/pill_rotate" />
+
+                <TextView
+                    android:id="@+id/btnLock"
+                    style="@style/Pill"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:drawableStart="@drawable/ic_lock"
+                    android:text="@string/pill_lock" />
+
+                <TextView
+                    android:id="@+id/btnRepeat"
+                    style="@style/Pill"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:drawableStart="@drawable/ic_repeat"
+                    android:text="@string/pill_repeat" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <ImageButton
+                    android:id="@+id/btnPrev"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_glass_circle"
+                    android:contentDescription="@string/cd_prev"
+                    android:padding="13dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_prev"
+                    android:tint="@color/white" />
+
+                <ImageButton
+                    android:id="@+id/btnNext"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_glass_circle"
+                    android:contentDescription="@string/cd_next"
+                    android:padding="13dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_next"
+                    android:tint="@color/white" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
 
     <TextView
         android:id="@+id/tvHud"

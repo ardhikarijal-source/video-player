@@ -2,6 +2,7 @@ package com.pemutar.video
 
 import android.annotation.SuppressLint
 import android.app.PictureInPictureParams
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -21,10 +22,12 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
+import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -38,24 +41,26 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
-import androidx.media3.common.util.RepeatModeUtil
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
+import androidx.media3.ui.TrackSelectionDialogBuilder
 import com.pemutar.video.databinding.ActivityPlayerBinding
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * Layar pemutar video.
+ * Layar pemutar video dengan kontrol sendiri (gaya "glass").
  *
- * Gestur:
- *  - ketuk sekali          : tampil/sembunyikan kontrol
- *  - ketuk dua kali        : kiri = mundur 10 dtk, kanan = maju 10 dtk, tengah = putar/jeda
- *  - geser vertikal kiri   : kecerahan
- *  - geser vertikal kanan  : volume
- *  - geser horizontal      : maju/mundur (seek)
+ * Tata letak:
+ *  - kiri atas   : tutup, lalu pil [PiP, rasio layar, bagikan]
+ *  - kanan atas  : slider volume
+ *  - tengah      : mundur 10 dtk, putar/jeda, maju 10 dtk
+ *  - kiri bawah  : judul; kanan bawah: pil [subtitle, audio, kecepatan]
+ *  - bawah       : seek bar, lalu [rotasi, kunci, ulangi] di kiri dan [sebelumnya, berikutnya] di kanan
+ *
+ * Gestur: ketuk = tampil/sembunyi kontrol; ketuk dua kali kiri/kanan = -/+10 dtk, tengah = putar/jeda;
+ * geser vertikal kiri = kecerahan, kanan = volume; geser horizontal = seek.
  */
 class PlayerActivity : AppCompatActivity() {
 
@@ -63,6 +68,7 @@ class PlayerActivity : AppCompatActivity() {
         const val EXTRA_URIS = "extra_uris"
         const val EXTRA_TITLES = "extra_titles"
         const val EXTRA_INDEX = "extra_index"
+        private const val SEEK_MAX = 10000
     }
 
     private enum class Gesture { NONE, SEEK, BRIGHTNESS, VOLUME }
@@ -74,6 +80,8 @@ class PlayerActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
 
     private var locked = false
+    private var controlsVisible = false
+    private var userSeeking = false
     private var resizeIndex = 0
     private var orientationMode = 0 // 0 = otomatis (ikuti video), 1 = landscape, 2 = portrait
     private var currentMediaId: String? = null
@@ -93,9 +101,19 @@ class PlayerActivity : AppCompatActivity() {
         AspectRatioFrameLayout.RESIZE_MODE_ZOOM
     )
     private val resizeNames = arrayOf("Pas layar", "Regangkan", "Zoom (potong tepi)")
+    private val speeds = floatArrayOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
 
     private val hideHudRunnable = Runnable { binding.tvHud.visibility = View.GONE }
     private val hideUnlockRunnable = Runnable { binding.btnUnlock.visibility = View.GONE }
+    private val autoHideRunnable = Runnable {
+        if (player?.isPlaying == true && !userSeeking) hideControls()
+    }
+    private val ticker = object : Runnable {
+        override fun run() {
+            updateProgress()
+            if (controlsVisible) handler.postDelayed(this, 500)
+        }
+    }
 
     private val subtitlePicker =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -114,11 +132,25 @@ class PlayerActivity : AppCompatActivity() {
             }
             currentMediaId = mediaItem?.mediaId
             binding.tvTitle.text = mediaItem?.mediaMetadata?.title ?: ""
+            updatePlaylistLabel()
+            updatePrevNext()
+        }
+
+        override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) {
+            updatePlaylistLabel()
+            updatePrevNext()
+        }
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            updatePlayPause()
+            if (isPlaying) scheduleAutoHide() else handler.removeCallbacks(autoHideRunnable)
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
+            updatePlayPause()
             if (playbackState == Player.STATE_ENDED) {
                 currentMediaId?.let { Prefs.setPosition(this@PlayerActivity, it, 0L) }
+                showControls()
             }
         }
 
@@ -153,6 +185,7 @@ class PlayerActivity : AppCompatActivity() {
         })
 
         loadFromIntent(intent)
+        showControls()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -178,8 +211,7 @@ class PlayerActivity : AppCompatActivity() {
         newConfig: Configuration
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
-        binding.playerView.useController = !isInPictureInPictureMode
-        if (isInPictureInPictureMode) binding.topBar.visibility = View.GONE
+        if (isInPictureInPictureMode) hideControls()
     }
 
     override fun onPause() {
@@ -210,11 +242,12 @@ class PlayerActivity : AppCompatActivity() {
                 WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
             window.attributes = lp
         }
-        ViewCompat.setOnApplyWindowInsetsListener(binding.topBar) { v, insets ->
+        // Beri jarak kontrol dari poni (notch) dan tepi layar
+        ViewCompat.setOnApplyWindowInsetsListener(binding.controls) { v, insets ->
             val i = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
-            v.setPadding(i.left + dp(8), i.top + dp(4), i.right + dp(8), dp(4))
+            v.setPadding(i.left + dp(14), i.top + dp(10), i.right + dp(14), i.bottom + dp(10))
             insets
         }
         hideSystemBars()
@@ -243,27 +276,89 @@ class PlayerActivity : AppCompatActivity() {
             .build()
         exo.addListener(playerListener)
         player = exo
-
         binding.playerView.player = exo
-        binding.playerView.setShowSubtitleButton(true)
-        binding.playerView.setRepeatToggleModes(
-            RepeatModeUtil.REPEAT_TOGGLE_MODE_ONE or RepeatModeUtil.REPEAT_TOGGLE_MODE_ALL
-        )
-        binding.playerView.setControllerVisibilityListener(
-            PlayerView.ControllerVisibilityListener { visibility ->
-                binding.topBar.visibility = if (locked) View.GONE else visibility
-            }
-        )
     }
 
     private fun setupControls() {
-        binding.btnBack.setOnClickListener { finish() }
-        binding.btnSubtitle.setOnClickListener { subtitlePicker.launch(arrayOf("*/*")) }
-        binding.btnAspect.setOnClickListener { cycleResize() }
-        binding.btnRotate.setOnClickListener { cycleOrientation() }
+        binding.btnClose.setOnClickListener { finish() }
         binding.btnPip.setOnClickListener { tryEnterPip(true) }
+        binding.btnAspect.setOnClickListener { cycleResize(); scheduleAutoHide() }
+        binding.btnShare.setOnClickListener { shareCurrent() }
+
+        binding.btnReplay.setOnClickListener { seekRelative(-10_000L); scheduleAutoHide() }
+        binding.btnForward.setOnClickListener { seekRelative(10_000L); scheduleAutoHide() }
+        binding.btnPlayPause.setOnClickListener { togglePlay(); scheduleAutoHide() }
+
+        binding.btnCc.setOnClickListener { showSubtitleMenu() }
+        binding.btnAudio.setOnClickListener {
+            showTrackDialog(C.TRACK_TYPE_AUDIO, getString(R.string.cd_audio))
+        }
+        binding.btnSpeed.setOnClickListener { showSpeedDialog() }
+
+        binding.btnRotate.setOnClickListener { cycleOrientation(); scheduleAutoHide() }
         binding.btnLock.setOnClickListener { setLocked(true) }
+        binding.btnRepeat.setOnClickListener { cycleRepeat(); scheduleAutoHide() }
         binding.btnUnlock.setOnClickListener { setLocked(false) }
+
+        binding.btnPrev.setOnClickListener {
+            val p = player ?: return@setOnClickListener
+            if (p.hasPreviousMediaItem()) {
+                savePosition()
+                p.seekToPreviousMediaItem()
+                p.play()
+            }
+            scheduleAutoHide()
+        }
+        binding.btnNext.setOnClickListener {
+            val p = player ?: return@setOnClickListener
+            if (p.hasNextMediaItem()) {
+                savePosition()
+                p.seekToNextMediaItem()
+                p.play()
+            }
+            scheduleAutoHide()
+        }
+
+        binding.seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                if (!fromUser) return
+                val d = player?.duration ?: return
+                if (d > 0 && d != C.TIME_UNSET) {
+                    binding.tvPosition.text = Fmt.duration(d * progress / SEEK_MAX)
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                userSeeking = true
+                handler.removeCallbacks(autoHideRunnable)
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                val p = player
+                val d = p?.duration ?: C.TIME_UNSET
+                if (p != null && d > 0 && d != C.TIME_UNSET) {
+                    p.seekTo(d * seekBar.progress / SEEK_MAX)
+                }
+                userSeeking = false
+                scheduleAutoHide()
+            }
+        })
+
+        val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        binding.seekVolume.max = if (maxVol > 0) maxVol else 15
+        binding.seekVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                if (fromUser) audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, progress, 0)
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                handler.removeCallbacks(autoHideRunnable)
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                scheduleAutoHide()
+            }
+        })
 
         val pipSupported = Build.VERSION.SDK_INT >= 26 &&
             packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
@@ -276,13 +371,19 @@ class PlayerActivity : AppCompatActivity() {
             override fun onDown(e: MotionEvent): Boolean = true
 
             override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-                if (locked) showUnlockTemporarily() else toggleControls()
+                if (locked) {
+                    showUnlockTemporarily()
+                } else if (controlsVisible) {
+                    hideControls()
+                } else {
+                    showControls()
+                }
                 return true
             }
 
             override fun onDoubleTap(e: MotionEvent): Boolean {
                 if (locked) return true
-                val w = binding.playerView.width
+                val w = binding.root.width
                 when {
                     e.x < w / 3f -> seekRelative(-10_000L)
                     e.x > w * 2f / 3f -> seekRelative(10_000L)
@@ -292,7 +393,80 @@ class PlayerActivity : AppCompatActivity() {
             }
         })
 
-        binding.playerView.setOnTouchListener { v, ev -> handleTouch(v, ev) }
+        // Pasang di root: tombol-tombol di atasnya tetap menerima sentuhan lebih dulu
+        binding.root.setOnTouchListener { v, ev -> handleTouch(v, ev) }
+    }
+
+    // ---------------------------------------------------------------- tampil/sembunyi kontrol
+
+    private fun showControls() {
+        if (locked) return
+        controlsVisible = true
+        binding.controls.visibility = View.VISIBLE
+        syncVolumeBar()
+        updatePlayPause()
+        updatePrevNext()
+        updatePlaylistLabel()
+        updateProgress()
+        handler.removeCallbacks(ticker)
+        handler.post(ticker)
+        scheduleAutoHide()
+    }
+
+    private fun hideControls() {
+        controlsVisible = false
+        binding.controls.visibility = View.GONE
+        handler.removeCallbacks(ticker)
+        handler.removeCallbacks(autoHideRunnable)
+    }
+
+    private fun scheduleAutoHide() {
+        handler.removeCallbacks(autoHideRunnable)
+        if (controlsVisible && player?.isPlaying == true) {
+            handler.postDelayed(autoHideRunnable, 3500)
+        }
+    }
+
+    private fun updateProgress() {
+        val p = player ?: return
+        val dur = p.duration
+        val valid = dur > 0 && dur != C.TIME_UNSET
+        binding.tvDuration.text = if (valid) Fmt.duration(dur) else "--:--"
+        if (userSeeking) return
+        binding.tvPosition.text = Fmt.duration(p.currentPosition)
+        if (valid) {
+            binding.seekBar.progress = (p.currentPosition * SEEK_MAX / dur).toInt().coerceIn(0, SEEK_MAX)
+            binding.seekBar.secondaryProgress =
+                (p.bufferedPosition * SEEK_MAX / dur).toInt().coerceIn(0, SEEK_MAX)
+        } else {
+            binding.seekBar.progress = 0
+        }
+    }
+
+    private fun updatePlayPause() {
+        val p = player ?: return
+        val showPause = p.playWhenReady && p.playbackState != Player.STATE_ENDED
+        binding.btnPlayPause.setImageResource(if (showPause) R.drawable.ic_pause else R.drawable.ic_play)
+    }
+
+    private fun updatePrevNext() {
+        val p = player
+        val hasPrev = p?.hasPreviousMediaItem() == true
+        val hasNext = p?.hasNextMediaItem() == true
+        binding.btnPrev.isEnabled = hasPrev
+        binding.btnPrev.alpha = if (hasPrev) 1f else 0.35f
+        binding.btnNext.isEnabled = hasNext
+        binding.btnNext.alpha = if (hasNext) 1f else 0.35f
+    }
+
+    private fun updatePlaylistLabel() {
+        val p = player ?: return
+        val count = p.mediaItemCount
+        binding.tvSubTop.text = if (count > 1) "Video ${p.currentMediaItemIndex + 1} dari $count" else ""
+    }
+
+    private fun syncVolumeBar() {
+        binding.seekVolume.progress = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
     }
 
     // ---------------------------------------------------------------- memuat media
@@ -357,7 +531,49 @@ class PlayerActivity : AppCompatActivity() {
         return if (last.isNullOrEmpty()) "Video" else last.substringAfterLast('/')
     }
 
-    // ---------------------------------------------------------------- subtitle
+    // ---------------------------------------------------------------- subtitle, audio, kecepatan
+
+    private fun showSubtitleMenu() {
+        val items = arrayOf(getString(R.string.sub_choose_track), getString(R.string.sub_load_file))
+        AlertDialog.Builder(this)
+            .setTitle(R.string.cd_subtitle)
+            .setItems(items) { _, which ->
+                if (which == 0) {
+                    showTrackDialog(C.TRACK_TYPE_TEXT, getString(R.string.cd_subtitle))
+                } else {
+                    subtitlePicker.launch(arrayOf("*/*"))
+                }
+            }
+            .show()
+    }
+
+    private fun showTrackDialog(trackType: Int, title: String) {
+        val p = player ?: return
+        val available = p.currentTracks.groups.any { it.type == trackType && it.length > 0 }
+        if (!available) {
+            Toast.makeText(this, R.string.no_tracks, Toast.LENGTH_SHORT).show()
+            return
+        }
+        TrackSelectionDialogBuilder(this, title, p, trackType)
+            .setAllowAdaptiveSelections(false)
+            .build()
+            .show()
+    }
+
+    private fun showSpeedDialog() {
+        val p = player ?: return
+        val labels = speeds.map { if (it == 1f) "Normal (1x)" else "${it}x" }.toTypedArray()
+        val found = speeds.indexOfFirst { it == p.playbackParameters.speed }
+        val current = if (found >= 0) found else 2
+        AlertDialog.Builder(this)
+            .setTitle(R.string.cd_speed)
+            .setSingleChoiceItems(labels, current) { dialog, which ->
+                p.setPlaybackSpeed(speeds[which])
+                showHud("Kecepatan ${labels[which]}")
+                dialog.dismiss()
+            }
+            .show()
+    }
 
     private fun addSubtitle(uri: Uri) {
         val p = player ?: return
@@ -392,7 +608,7 @@ class PlayerActivity : AppCompatActivity() {
         Toast.makeText(this, R.string.subtitle_loaded, Toast.LENGTH_SHORT).show()
     }
 
-    // ---------------------------------------------------------------- tombol atas
+    // ---------------------------------------------------------------- tombol lain
 
     private fun cycleResize() {
         resizeIndex = (resizeIndex + 1) % resizeModes.size
@@ -430,17 +646,53 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
+    private fun cycleRepeat() {
+        val p = player ?: return
+        when (p.repeatMode) {
+            Player.REPEAT_MODE_OFF -> {
+                p.repeatMode = Player.REPEAT_MODE_ONE
+                showHud("Ulangi: video ini")
+            }
+            Player.REPEAT_MODE_ONE -> {
+                p.repeatMode = Player.REPEAT_MODE_ALL
+                showHud("Ulangi: semua video")
+            }
+            else -> {
+                p.repeatMode = Player.REPEAT_MODE_OFF
+                showHud("Ulangi: mati")
+            }
+        }
+        binding.btnRepeat.alpha = if (p.repeatMode == Player.REPEAT_MODE_OFF) 0.7f else 1f
+    }
+
+    private fun shareCurrent() {
+        val uri = player?.currentMediaItem?.localConfiguration?.uri ?: return
+        val send = Intent(Intent.ACTION_SEND)
+        if (uri.scheme == "http" || uri.scheme == "https") {
+            send.type = "text/plain"
+            send.putExtra(Intent.EXTRA_TEXT, uri.toString())
+        } else {
+            send.type = "video/*"
+            send.putExtra(Intent.EXTRA_STREAM, uri)
+            send.clipData = ClipData.newRawUri("", uri)
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        try {
+            startActivity(Intent.createChooser(send, null))
+        } catch (e: Exception) {
+            // tidak ada aplikasi tujuan
+        }
+    }
+
     private fun setLocked(lock: Boolean) {
         locked = lock
-        binding.playerView.controllerAutoShow = !lock
         if (lock) {
-            binding.playerView.hideController()
-            binding.topBar.visibility = View.GONE
+            hideControls()
             showUnlockTemporarily()
         } else {
             handler.removeCallbacks(hideUnlockRunnable)
             binding.btnUnlock.visibility = View.GONE
-            binding.playerView.showController()
+            showControls()
         }
     }
 
@@ -572,6 +824,7 @@ class PlayerActivity : AppCompatActivity() {
         if (max <= 0) return
         val value = (startVolume - dy / height * max * 1.3f).coerceIn(0f, max.toFloat())
         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, value.roundToInt(), 0)
+        binding.seekVolume.progress = value.roundToInt()
         showHud("Volume ${(value / max * 100).roundToInt()}%")
     }
 
@@ -593,14 +846,6 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     // ---------------------------------------------------------------- aksi dasar
-
-    private fun toggleControls() {
-        if (binding.playerView.isControllerFullyVisible) {
-            binding.playerView.hideController()
-        } else {
-            binding.playerView.showController()
-        }
-    }
 
     private fun togglePlay() {
         val p = player ?: return

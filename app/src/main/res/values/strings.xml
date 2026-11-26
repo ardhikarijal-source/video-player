@@ -11,6 +11,7 @@
     <string name="menu_open_url">Buka URL jaringan…</string>
     <string name="menu_default">Jadikan pemutar default</string>
     <string name="menu_refresh">Muat ulang</string>
+    <string name="menu_update">Periksa pembaruan</string>
 
     <string name="sort_newest">Terbaru</string>
     <string name="sort_name">Nama (A–Z)</string>
@@ -32,16 +33,48 @@
     <string name="default_message">Cara menjadikan aplikasi ini pemutar video default:\n\n1. Buka sebuah video dari File Manager atau Galeri.\n2. Saat muncul pilihan \"Buka dengan\", pilih Pemutar Video lalu ketuk \"Selalu\".\n\nJika HP langsung membuka MiVideo tanpa bertanya, buka Pengaturan > Aplikasi > Kelola aplikasi > MiVideo, lalu hapus pengaturan default-nya (Atur sebagai default > Hapus default).</string>
     <string name="default_open_settings">Buka pengaturan</string>
 
+    <!-- Auto update -->
+    <string name="update_title">Pembaruan tersedia</string>
+    <string name="update_message">Versi %1$s sudah tersedia. Kamu memakai versi %2$s.%3$s</string>
+    <string name="update_now">Perbarui</string>
+    <string name="update_later">Nanti</string>
+    <string name="update_downloading">Mengunduh pembaruan…</string>
+    <string name="update_none">Kamu sudah memakai versi terbaru</string>
+    <string name="update_failed">Tidak bisa memeriksa pembaruan. Cek koneksi internet.</string>
+    <string name="update_download_failed">Unduhan pembaruan gagal</string>
+    <string name="update_permission_title">Izin pemasangan</string>
+    <string name="update_permission_message">Agar bisa memasang pembaruan, izinkan aplikasi ini memasang aplikasi lain. Setelah mengizinkan, kembali ke sini dan pemasangan akan dilanjutkan.</string>
+    <string name="update_channel">Pembaruan aplikasi</string>
+    <string name="notif_update_title">Pembaruan Pemutar Video tersedia</string>
+    <string name="notif_update_text">Versi %1$s siap diunduh. Ketuk untuk memperbarui.</string>
+
     <string name="err_play">Gagal memutar video (%1$s). Format atau codec mungkin tidak didukung HP ini.</string>
     <string name="subtitle_loaded">Subtitle dimuat</string>
     <string name="pip_unavailable">Mode jendela mengambang (PiP) tidak tersedia. Cek izin PiP untuk aplikasi ini di pengaturan HP.</string>
     <string name="no_video_data">Tidak ada video untuk diputar</string>
+    <string name="no_tracks">Tidak ada trek yang tersedia</string>
+    <string name="sub_choose_track">Pilih trek subtitle</string>
+    <string name="sub_load_file">Muat file subtitle (.srt, .vtt, .ass)…</string>
+
+    <string name="pill_rotate">Rotasi</string>
+    <string name="pill_lock">Kunci</string>
+    <string name="pill_repeat">Ulangi</string>
 
     <string name="cd_back">Kembali</string>
-    <string name="cd_subtitle">Muat subtitle</string>
+    <string name="cd_close">Tutup pemutar</string>
+    <string name="cd_subtitle">Subtitle</string>
+    <string name="cd_audio">Audio</string>
+    <string name="cd_speed">Kecepatan putar</string>
     <string name="cd_aspect">Rasio layar</string>
     <string name="cd_rotate">Rotasi layar</string>
     <string name="cd_pip">Jendela mengambang</string>
+    <string name="cd_share">Bagikan</string>
     <string name="cd_lock">Kunci layar</string>
     <string name="cd_unlock">Buka kunci</string>
+    <string name="cd_replay">Mundur 10 detik</string>
+    <string name="cd_forward">Maju 10 detik</string>
+    <string name="cd_playpause">Putar atau jeda</string>
+    <string name="cd_prev">Video sebelumnya</string>
+    <string name="cd_next">Video berikutnya</string>
+    <string name="cd_volume">Volume</string>
 </resources>

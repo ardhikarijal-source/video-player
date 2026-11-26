@@ -11,10 +11,13 @@ android {
         applicationId = "com.pemutar.video"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        // Lanjutan dari versi sebelumnya (1 / "1.0"). Naikkan KEDUANYA setiap rilis baru.
+        versionCode = 2
+        versionName = "1.1"
     }
 
+    // Kunci tanda tangan dibaca dari variabel lingkungan (diisi GitHub Secrets saat build).
+    // Debug dan release memakai kunci yang SAMA supaya update otomatis bisa menimpa aplikasi lama.
     val keystorePath = System.getenv("KEYSTORE_FILE")
     val hasReleaseKey = keystorePath != null && file(keystorePath).exists()
 
@@ -30,6 +33,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig = if (hasReleaseKey) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+        }
         release {
             isMinifyEnabled = false
             signingConfig = if (hasReleaseKey) {
@@ -51,6 +61,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     lint {

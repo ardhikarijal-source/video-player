@@ -7,6 +7,10 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Auto update: notifikasi dan pemasangan APK hasil unduhan -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
@@ -17,7 +21,8 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -83,5 +88,16 @@
                 <data android:pathPattern=".*\\.m3u8" />
             </intent-filter>
         </activity>
+
+        <!-- Dipakai untuk memasang APK pembaruan yang diunduh -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>

@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Debug APK
 
 on:
   workflow_dispatch:
@@ -23,15 +23,15 @@ jobs:
       - name: Siapkan kunci tanda tangan
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/pemutar.jks"
 
-      - name: Build APK
+      - name: Build APK debug
         env:
           KEYSTORE_FILE: ${{ runner.temp }}/pemutar.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: pemutar
           KEY_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        run: gradle assembleRelease --no-daemon
+        run: gradle assembleDebug --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
-          name: PemutarVideo-apk
-          path: app/build/outputs/apk/release/*.apk
+          name: PemutarVideo-debug-apk
+          path: app/build/outputs/apk/debug/*.apk

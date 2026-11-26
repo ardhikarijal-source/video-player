@@ -3,19 +3,35 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurface"
+    android:background="@color/bg"
     android:orientation="vertical">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        app:title="@string/app_name" />
+        android:layout_height="64dp"
+        android:background="@color/bg"
+        app:title="@string/app_name"
+        app:titleMarginStart="4dp"
+        app:titleTextAppearance="@style/TitleBig" />
 
+    <!-- Tab berbentuk pil (chip) -->
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabs"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:background="@color/bg"
+        android:paddingHorizontal="8dp"
+        android:paddingBottom="6dp"
+        app:tabBackground="@drawable/bg_tab_pill"
+        app:tabIndicatorHeight="0dp"
+        app:tabMode="auto"
+        app:tabPaddingEnd="18dp"
+        app:tabPaddingStart="18dp"
+        app:tabRippleColor="@android:color/transparent"
+        app:tabSelectedTextColor="@color/on_accent"
+        app:tabTextAppearance="@style/TabText"
+        app:tabTextColor="@color/text_secondary">
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
@@ -38,9 +54,9 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
+            android:paddingHorizontal="8dp"
             android:paddingTop="4dp"
-            android:paddingBottom="12dp"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+            android:paddingBottom="16dp" />
 
         <LinearLayout
             android:id="@+id/emptyView"
@@ -58,7 +74,8 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:text="@string/empty_no_video"
-                android:textAppearance="?attr/textAppearanceBodyLarge" />
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
 
             <Button
                 android:id="@+id/btnGrant"
@@ -75,6 +92,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:indeterminate="true"
+            android:indeterminateTint="@color/accent"
             android:visibility="gone" />
     </FrameLayout>
 </LinearLayout>

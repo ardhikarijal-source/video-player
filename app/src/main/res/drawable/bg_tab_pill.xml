@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Latar tab berbentuk pil: aksen saat dipilih, abu gelap saat tidak -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <inset
+            android:insetBottom="2dp"
+            android:insetLeft="4dp"
+            android:insetRight="4dp"
+            android:insetTop="2dp">
+            <shape android:shape="rectangle">
+                <solid android:color="@color/accent" />
+                <corners android:radius="22dp" />
+            </shape>
+        </inset>
+    </item>
+    <item>
+        <inset
+            android:insetBottom="2dp"
+            android:insetLeft="4dp"
+            android:insetRight="4dp"
+            android:insetTop="2dp">
+            <shape android:shape="rectangle">
+                <solid android:color="@color/surface_high" />
+                <corners android:radius="22dp" />
+            </shape>
+        </inset>
+    </item>
+</selector>
